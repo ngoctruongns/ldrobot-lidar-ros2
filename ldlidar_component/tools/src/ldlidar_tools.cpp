@@ -17,83 +17,61 @@
 
 namespace tools
 {
-std::string qos2str(rmw_qos_history_policy_t qos)
+
+// Function to log messages based on the current log level
+void Logger::log(LogLevel level, const char* fmt, ...)
 {
-  switch (qos) {
-    case RMW_QOS_POLICY_HISTORY_SYSTEM_DEFAULT:
-      return "RMW_QOS_POLICY_HISTORY_SYSTEM_DEFAULT";
+    if (level > _logLevel) {
+        return; // Skip logging if the level is lower than the current log level
+    }
 
-    case RMW_QOS_POLICY_HISTORY_KEEP_LAST:
-      return "RMW_QOS_POLICY_HISTORY_KEEP_LAST";
+    // Format the message using variable arguments
+    // This allows for formatted strings similar to printf
+    // Example: logger.log(LogLevel::INFO, "Value: %d", value);
+    va_list args;
+    va_start(args, fmt);
+    std::string message = vformat(fmt, args);
+    va_end(args);
 
-    case RMW_QOS_POLICY_HISTORY_KEEP_ALL:
-      return "RMW_QOS_POLICY_HISTORY_KEEP_ALL";
-  }
-
-  return "Unknown QoS value";
+    std::cout << get_color_code(level) << "[" << level_to_string(level) << "] "
+              << _name << ": " << message << "\033[0m" << std::endl;
 }
 
-std::string qos2str(rmw_qos_reliability_policy_t qos)
+std::string Logger::vformat(const char *fmt, va_list args)
 {
-  switch (qos) {
-    case RMW_QOS_POLICY_RELIABILITY_SYSTEM_DEFAULT:
-      return "RMW_QOS_POLICY_RELIABILITY_SYSTEM_DEFAULT";
-
-    case RMW_QOS_POLICY_RELIABILITY_RELIABLE:
-      return "RMW_QOS_POLICY_RELIABILITY_RELIABLE";
-
-    case RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT:
-      return "RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT";
-  }
-
-  return "Unknown QoS value";
+    char buffer[1024];
+    vsnprintf(buffer, sizeof(buffer), fmt, args);
+    return std::string(buffer);
 }
 
-std::string qos2str(rmw_qos_durability_policy_t qos)
+void Logger::setLogLevel(LogLevel level)
 {
-  switch (qos) {
-    case RMW_QOS_POLICY_DURABILITY_SYSTEM_DEFAULT:
-      return "RMW_QOS_POLICY_DURABILITY_SYSTEM_DEFAULT";
-
-    case RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL:
-      return "RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL";
-
-    case RMW_QOS_POLICY_DURABILITY_VOLATILE:
-      return "RMW_QOS_POLICY_DURABILITY_VOLATILE";
-  }
-
-  return "Unknown QoS value";
+    _logLevel = level;
 }
 
-// std::string to_string(ldlidar::UNITS val)
-// {
-//   switch (val) {
-//     case ldlidar::UNITS::MILLIMETERS:
-//       return "MILLIMETERS";
+std::string Logger::level_to_string(LogLevel level) const
+{
+    switch (level) {
+        case LogLevel::DEBUG: return "DBG";
+        case LogLevel::INFO:  return "INF";
+        case LogLevel::WARN:  return "WRN";
+        case LogLevel::ERROR: return "ERR";
+        default:              return "UNK";
+    }
+}
 
-//     case ldlidar::UNITS::CENTIMETERS:
-//       return "CENTIMETERS";
+const char* Logger::get_color_code(LogLevel level)
+{
+    switch (level) {
+        case LogLevel::DEBUG: return "\033[34m"; // Blue
+        case LogLevel::INFO:  return "\033[32m"; // Green
+        case LogLevel::WARN:  return "\033[33m"; // Yellow
+        case LogLevel::ERROR: return "\033[31m"; // Red
+        default:              return "\033[0m";  // Reset
+    }
+}
 
-//     case ldlidar::UNITS::METERS:
-//       return "METERS";
-//   }
-
-//   return "Unknown UNITS value";
-// }
-
-// std::string to_string(ldlidar::ROTATION val)
-// {
-//   switch (val) {
-//     case ldlidar::ROTATION::CLOCKWISE:
-//       return "CLOCKWISE";
-
-//     case ldlidar::ROTATION::COUNTERCLOCKWISE:
-//       return "COUNTERCLOCKWISE";
-//   }
-
-//   return "Unknown ROTATION value";
-// }
-
+// Function to get the current system timestamp in nanoseconds
 uint64_t GetSystemTimeStamp(void)
 {
   std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds> tp =
@@ -101,4 +79,5 @@ uint64_t GetSystemTimeStamp(void)
   auto tmp = std::chrono::duration_cast<std::chrono::nanoseconds>(tp.time_since_epoch());
   return (uint64_t)tmp.count();
 }
-}  // namespace tools
+
+} // namespace tools
