@@ -71,6 +71,16 @@ namespace ldlidar
         return !_threadStop;
     }
 
+    void LdLidarComponent::setSubscriberCount(int count)
+    {
+        _sub_count = count;
+    }
+
+    void LdLidarComponent::registerCallback(CallbackType callback)
+    {
+        _dataCallback = callback;
+    }
+
     void LdLidarComponent::publishLaserScan(ldlidar::Points2D &src, double lidar_spin_freq)
     {
         float angle_min, angle_max, angle_increment;
@@ -108,7 +118,7 @@ namespace ldlidar
         // Calculate the number of scanning points
         if (lidar_spin_freq > 0)
         {
-            // TODO: Change by message parameter
+            // Change by message parameter
             LidarMessage msg;
             msg.header_stamp = start_scan_time;
             msg.angle_increment = angle_increment;
@@ -193,9 +203,11 @@ namespace ldlidar
                 }
             }
 
-            // TODO: Publish the message
-            // _scanPub->publish(std::move(msg));
-
+            // Publish the message using the callback
+            if (_dataCallback)
+            {
+                _dataCallback(msg);
+            }
             end_scan_time = start_scan_time;
         }
     }
@@ -290,13 +302,12 @@ namespace ldlidar
 
             if (_threadStop)
             {
-                LOG_DBG(_logger, "Lidar thread stopped");
+                LOG_INF(_logger, "Lidar thread stopped");
                 break;
             }
             // <---- Interruption check
             // Get number of subscribers to the scan topic
-            int nSub = 1;    // TODO: Replace with actual subscriber count logic
-            if (nSub > 0)
+            if (_sub_count > 0)
             {
                 _publishing = true;
                 switch (_lidar->GetLaserScanData(laser_scan_points, _readTimeOut_msec))
@@ -331,7 +342,7 @@ namespace ldlidar
             }
         }
 
-        LOG_DBG(_logger, "Lidar thread finished");
+        LOG_INF(_logger, "Lidar thread finished");
     }
 
 } // namespace ldlidar

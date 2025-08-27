@@ -12,8 +12,8 @@ file(GLOB_RECURSE DRIVER_SRC *.c *.cpp)
 file(GLOB_RECURSE DRIVER_HDR *.h *.hpp)
 #########################################################
 
-add_library( ldlidar 
-  ${DRIVEDRIVER_HDR_SRC} 
+add_library( ldlidar STATIC
+  ${DRIVEDRIVER_HDR_SRC}
   ${DRIVER_SRC}
 )
 

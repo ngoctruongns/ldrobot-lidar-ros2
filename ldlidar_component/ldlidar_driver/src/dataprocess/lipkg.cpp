@@ -169,10 +169,10 @@ namespace ldlidar
                 double diff = (pkg_.end_angle / 100 - pkg_.start_angle / 100 + 360) % 360;
                 if (diff <= ((double)pkg_.speed * POINT_PER_PACK / measure_point_frequence_ * 1.5))
                 {
-                    std::cout << "speed: " << pkg_.speed << " degree/s, "
-                              << "start angle: " << pkg_.start_angle / 100.0 << " degree, "
-                              << "end angle: " << pkg_.end_angle / 100.0 << " degree, "
-                              << "diff: " << diff << " degree" << std::endl;
+                    // std::cout << "speed: " << pkg_.speed << " degree/s, "
+                    //           << "start angle: " << pkg_.start_angle / 100.0 << " degree, "
+                    //           << "end angle: " << pkg_.end_angle / 100.0 << " degree, "
+                    //           << "timestamp: " << pkg_.timestamp << " ms, \n";
 
                     if (0 == last_pkg_timestamp_)
                     {

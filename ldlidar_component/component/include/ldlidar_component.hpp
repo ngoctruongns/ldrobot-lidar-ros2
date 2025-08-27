@@ -36,6 +36,8 @@ namespace ldlidar
         std::vector<float> ranges; ///< Ranges data
         std::vector<float> intensities; ///< Intensities data
     };
+
+    using CallbackType = std::function<void(const LidarMessage&)>;
     class LdLidarComponent
     {
     public:
@@ -86,6 +88,10 @@ namespace ldlidar
 
         bool isProcessRunning();
 
+        void setSubscriberCount(int count);
+        // callback functions for pushlishing data
+        void registerCallback(CallbackType callback);
+
     private:
         // ----> Parameters
         bool _debugMode = true;                ///< Debug mode flag.
@@ -112,6 +118,11 @@ namespace ldlidar
         std::thread _lidarThread; ///< Lidar thread.
         bool _threadStop = false; ///< Thread stop flag.
         // <---- Threads
+
+        // ----> Publisher
+        int _sub_count = 0; ///< Subscriber count.
+        CallbackType _dataCallback; ///< Data callback function.
+        // <---- Publisher
 
         // ----> Diagnostic
         double _pubFreq;  ///< Publishing frequency.
