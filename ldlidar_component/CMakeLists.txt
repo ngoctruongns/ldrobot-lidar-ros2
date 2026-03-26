@@ -1,9 +1,11 @@
-cmake_minimum_required(VERSION 3.5)
-project(ldlidar_sensor)
+cmake_minimum_required(VERSION 3.8)
+project(ldlidar_component)
 
 ################################################
 ## Generate symbols for IDE indexer (VSCode)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+find_package(ament_cmake REQUIRED)
 
 # Default to C99
 if(NOT CMAKE_C_STANDARD)
@@ -15,12 +17,14 @@ if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 14)
 endif()
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake-modules)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake-modules)
+find_package(UDEV REQUIRED)
+find_package(fastcdr REQUIRED)
+find_package(fastrtps REQUIRED)
 
 #############################################
 # Include directories
 include_directories(
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/tools/include
     ${CMAKE_CURRENT_SOURCE_DIR}/component/include
     ${CMAKE_CURRENT_SOURCE_DIR}/ldlidar_driver/include/core
@@ -42,37 +46,52 @@ add_subdirectory(ldlidar_fastdds)
 add_library(ldlidar_tool STATIC
     tools/src/ldlidar_tools.cpp
 )
+target_link_libraries(ldlidar_tool
+    ${UDEV_LIBRARIES}
+)
+target_include_directories(ldlidar_tool PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/tools/include>
+    $<INSTALL_INTERFACE:include>
+)
 
 add_library(ldlidar_component STATIC
     component/src/ldlidar_component.cpp
 )
 target_link_libraries(ldlidar_component
     ldlidar
-    LidarMsg_lib
     ldlidar_tool
     ${UDEV_LIBRARIES})
-
-###############################################################################
-# Creat executable for
-add_executable(${PROJECT_NAME}_publisher
-    src/LidarPushlisher.cpp
+target_include_directories(ldlidar_component PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/component/include>
+    $<INSTALL_INTERFACE:include>
 )
 
-add_executable(${PROJECT_NAME}_subscriber
-    src/LidarSubscriber.cpp
-)
-
-###############################################################################
-# Link libraries
-target_link_libraries(${PROJECT_NAME}_publisher
-    ldlidar_component
+install(TARGETS
     ldlidar
-    LidarMsg_lib
     ldlidar_tool
-    ${UDEV_LIBRARIES}
+    ldlidar_component
+    LidarMsg_lib
+    EXPORT export_${PROJECT_NAME}
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+    RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
-target_link_libraries(${PROJECT_NAME}_subscriber
-    LidarMsg_lib
-    ldlidar_tool
+install(DIRECTORY
+    component/include/
+    tools/include/
+    ldlidar_fastdds/include/
+    ldlidar_driver/include/core/
+    ldlidar_driver/include/dataprocess/
+    ldlidar_driver/include/filter/
+    ldlidar_driver/include/logger/
+    ldlidar_driver/include/networkcom/
+    ldlidar_driver/include/serialcom/
+    DESTINATION include
 )
+
+ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET)
+ament_export_include_directories(include)
+ament_export_libraries(ldlidar ldlidar_tool ldlidar_component LidarMsg_lib)
+ament_export_dependencies(fastcdr fastrtps)
+ament_package()

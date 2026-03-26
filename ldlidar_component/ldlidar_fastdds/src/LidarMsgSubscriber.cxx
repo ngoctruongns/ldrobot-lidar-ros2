@@ -24,6 +24,7 @@
 #include <fastdds/dds/subscriber/SampleInfo.hpp>
 #include <fastdds/dds/subscriber/Subscriber.hpp>
 #include <fastdds/dds/subscriber/qos/DataReaderQos.hpp>
+#include <utility>
 
 #include "LidarMsgSubscriber.h"
 #include "LidarMsgPubSubTypes.h"
@@ -147,6 +148,11 @@ void LidarMsgSubscriber::SubListener::on_data_available(
             {
                 std::cout << "Received data with insufficient ranges." << std::endl;
             }
+
+            if (callback_)
+            {
+                callback_(st);
+            }
         }
     }
 }
@@ -156,4 +162,9 @@ void LidarMsgSubscriber::run()
     std::cout << "Waiting for Data, press Enter to stop the DataReader. " << std::endl;
     std::cin.ignore();
     std::cout << "Shutting down the Subscriber." << std::endl;
+}
+
+void LidarMsgSubscriber::set_callback(CallbackType&& cb)
+{
+    listener_.callback_ = std::move(cb);
 }

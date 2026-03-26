@@ -20,6 +20,10 @@ add_library(LidarMsg_lib STATIC
     src/LidarMsgPublisher.cxx
     src/LidarMsgSubscriber.cxx
 )
+target_include_directories(LidarMsg_lib PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+)
 target_link_libraries(LidarMsg_lib fastcdr fastrtps)
 
 add_executable(LidarMsgDDS src/LidarMsgPubSubMain.cxx)

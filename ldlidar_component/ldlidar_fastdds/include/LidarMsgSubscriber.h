@@ -27,10 +27,14 @@
 #include <fastdds/dds/subscriber/DataReader.hpp>
 #include <fastdds/dds/subscriber/DataReaderListener.hpp>
 #include <fastdds/dds/subscriber/Subscriber.hpp>
+#include <functional>
+
+#include "LidarMsg.h"
 
 class LidarMsgSubscriber
 {
 public:
+    using CallbackType = std::function<void(const LidarMessage&)>;
 
     LidarMsgSubscriber();
 
@@ -39,6 +43,7 @@ public:
     bool init();
 
     void run();
+    void set_callback(CallbackType&& cb);
 
 private:
 
@@ -65,6 +70,7 @@ private:
 
         int matched = 0;
         uint32_t samples = 0;
+        CallbackType callback_;
     }
     listener_;
 };
