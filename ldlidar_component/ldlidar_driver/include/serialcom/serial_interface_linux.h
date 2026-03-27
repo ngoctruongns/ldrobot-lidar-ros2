@@ -63,13 +63,15 @@ public:
     }
     // whether open
     bool IsOpened() {return is_cmd_opened_.load();}
+    // whether a hard serial I/O error has been detected
+    bool HasSerialError() {return serial_error_.load();}
 
 private:
     std::thread * rx_thread_;
     long long rx_count_;
     int32_t com_handle_;
     uint32_t com_baudrate_;
-    std::atomic < bool > is_cmd_opened_, rx_thread_exit_flag_;
+    std::atomic < bool > is_cmd_opened_, rx_thread_exit_flag_, serial_error_;
     std::function < void(const char *, size_t length) > read_callback_;
     static void RxThreadProc(void * param);
   };

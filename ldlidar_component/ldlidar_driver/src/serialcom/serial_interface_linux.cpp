@@ -31,6 +31,7 @@ SerialInterfaceLinux::SerialInterfaceLinux()
 {
   com_handle_ = -1;
   com_baudrate_ = 0;
+  serial_error_ = false;
 }
 
 SerialInterfaceLinux::~SerialInterfaceLinux() {Close();}
@@ -157,7 +158,12 @@ bool SerialInterfaceLinux::ReadFromIO(
 
     if (FD_ISSET(com_handle_, &read_fds)) {
       len = (int32_t)read(com_handle_, rx_buf, rx_buf_len);
-      if ((len != -1) && rx_len) {
+      if (len == -1) {
+        if (errno == EIO || errno == EBADF || errno == ENXIO || errno == ENODEV) {
+          LD_LOG_ERROR("Serial hard I/O error: %s — port disconnected?", strerror(errno));
+          serial_error_ = true;
+        }
+      } else if (rx_len) {
         *rx_len = len;
       }
     }
@@ -185,6 +191,10 @@ void SerialInterfaceLinux::RxThreadProc(void * param)
   SerialInterfaceLinux * cmd_if = (SerialInterfaceLinux *)param;
   char * rx_buf = new char[MAX_ACK_BUF_LEN + 1];
   while (!cmd_if->rx_thread_exit_flag_.load()) {
+    if (cmd_if->serial_error_.load()) {
+      LD_LOG_ERROR("%s", "Serial error flag set -- exiting RxThread.");
+      break;
+    }
     uint32_t readed = 0;
     bool res = cmd_if->ReadFromIO((uint8_t *)rx_buf, MAX_ACK_BUF_LEN, &readed);
     if (res && readed) {

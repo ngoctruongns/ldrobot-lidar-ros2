@@ -10,10 +10,10 @@ int main()
     ldlidar::LdLidarComponent lidarComponent;
     tools::Logger logger("PUB");
 
-    if (!lidarComponent.initLidar())
+    while (!lidarComponent.initLidar())
     {
-        LOG_ERR(logger ,"Failed to initialize LIDAR component.");
-        return -1;
+        LOG_ERR(logger, "Failed to initialize LIDAR component, retrying in 3s...");
+        std::this_thread::sleep_for(std::chrono::seconds(3));
     }
 
     LidarMsgPublisher mypub;

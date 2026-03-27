@@ -239,7 +239,7 @@ namespace ldlidar
         else
         {
             LOG_ERR(_logger, "!!! LDLidar not opened !!!");
-            exit(EXIT_FAILURE);
+            return false;
         }
 
         if (_lidar->WaitLidarCommConnect(3000))
@@ -250,7 +250,7 @@ namespace ldlidar
         {
             LOG_ERR(_logger, " !!! LDLidar communication timeout !!!");
             _lidar->Stop();
-            exit(EXIT_FAILURE);
+            return false;
         }
 
         return true;
@@ -277,6 +277,29 @@ namespace ldlidar
             catch (std::system_error &e)
             {
                 LOG_WRN(_logger, "Lidar thread joining exception: %s", e.what());
+            }
+        }
+    }
+
+    void LdLidarComponent::attemptReconnect()
+    {
+        LOG_INF(_logger, "Serial timeout — stopping driver and retrying...");
+        _lidar->Stop();
+
+        int attempt = 0;
+        while (!_threadStop)
+        {
+            std::this_thread::sleep_for(std::chrono::seconds(2));
+            LOG_INF(_logger, "Reconnect attempt %d...", ++attempt);
+
+            _lidar = std::make_unique<ldlidar::LDLidarDriver>();
+            _lidar->RegisterGetTimestampFunctional(tools::GetSystemTimeStamp);
+            _lidar->EnableFilterAlgorithnmProcess(true);
+
+            if (initLidarComm())
+            {
+                LOG_INF(_logger, "LiDAR reconnected successfully on attempt %d.", attempt);
+                return;
             }
         }
     }
@@ -317,7 +340,8 @@ namespace ldlidar
                     publishLaserScan(laser_scan_points, lidar_scan_freq);
                     break;
                 case ldlidar::LidarStatus::DATA_TIME_OUT:
-                    LOG_ERR(_logger, "get ldlidar data is time out, please check your lidar device.");
+                    LOG_ERR(_logger, "get ldlidar data is time out — attempting reconnect...");
+                    attemptReconnect();
                     break;
                 case ldlidar::LidarStatus::DATA_WAIT:
                     break;

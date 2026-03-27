@@ -17,8 +17,12 @@ public:
             throw std::runtime_error("Failed to initialize LidarMsgSubscriber");
         }
 
+        last_msg_time_ = now();
+
         subscriber_.set_callback([this](const LidarMessage& msg)
         {
+            last_msg_time_ = now();
+
             sensor_msgs::msg::LaserScan ros_msg;
             ros_msg.header.stamp = now();
             ros_msg.header.frame_id = "ldlidar_frame";
@@ -55,11 +59,27 @@ public:
 
             publisher_->publish(ros_msg);
         });
+
+        // Watchdog: warn if no LiDAR data arrives for more than 3 seconds
+        watchdog_timer_ = create_wall_timer(
+            std::chrono::seconds(3),
+            [this]()
+            {
+                double elapsed = (now() - last_msg_time_).seconds();
+                if (elapsed > 3.0)
+                {
+                    RCLCPP_WARN(get_logger(),
+                        "No LiDAR data received for %.1f s — DDS connection lost or Pi-side node down?",
+                        elapsed);
+                }
+            });
     }
 
 private:
     rclcpp::Publisher<sensor_msgs::msg::LaserScan>::SharedPtr publisher_;
     LidarMsgSubscriber subscriber_;
+    rclcpp::TimerBase::SharedPtr watchdog_timer_;
+    rclcpp::Time last_msg_time_;
 };
 
 int main(int argc, char* argv[])

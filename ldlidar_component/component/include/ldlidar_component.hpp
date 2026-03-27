@@ -80,6 +80,11 @@ namespace ldlidar
         void lidarThreadFunc();
 
         /**
+         * @brief Stop lidar, then retry opening serial until success or shutdown.
+         */
+        void attemptReconnect();
+
+        /**
          * @brief Publish laser scan data.
          * @param src The source points.
          * @param lidar_spin_freq The lidar spin frequency.
