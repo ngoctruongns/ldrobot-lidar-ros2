@@ -1,19 +1,47 @@
 #include <algorithm>
+#include <atomic>
 #include <chrono>
+#include <csignal>
 #include <thread>
 
 #include "LidarMsgPublisher.h"
 #include "ldlidar_component.hpp"
 
+namespace
+{
+std::atomic<bool> g_running{true};
+
+void signalHandler(int signal)
+{
+    if (signal == SIGINT)
+    {
+        g_running.store(false);
+    }
+}
+} // namespace
+
 int main()
 {
+    std::signal(SIGINT, signalHandler);
+
     ldlidar::LdLidarComponent lidarComponent;
     tools::Logger logger("PUB");
 
-    while (!lidarComponent.initLidar())
+    while (g_running.load() && !lidarComponent.initLidar())
     {
         LOG_ERR(logger, "Failed to initialize LIDAR component, retrying in 3s...");
-        std::this_thread::sleep_for(std::chrono::seconds(3));
+
+        // Sleep in small chunks so Ctrl+C can stop promptly.
+        for (int i = 0; i < 30 && g_running.load(); ++i)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+    }
+
+    if (!g_running.load())
+    {
+        LOG_INF(logger, "SIGINT received. Exiting publisher.");
+        return 0;
     }
 
     LidarMsgPublisher mypub;
