@@ -116,9 +116,33 @@ source install/local_setup.zsh
 ros2 run ldlidar_ros_bridge ldlidar_ros_bridge_debug_subscriber
 ```
 
-### Independent TF for RViz2 test
+### One-command launch (TF + Bridge + RViz2)
 
-If you only have LiDAR data and no robot TF tree yet, start a static TF publisher:
+Run everything in one command (static TF, DDS->ROS2 bridge, RViz2):
+
+```bash
+cd /ros2_ws
+source /opt/ros/$ROS_DISTRO/setup.zsh
+source install/local_setup.zsh
+ros2 launch ldlidar_ros_bridge ldlidar_all_in_one.launch.py
+```
+
+Useful options:
+
+```bash
+# Custom TF
+ros2 launch ldlidar_ros_bridge ldlidar_all_in_one.launch.py \
+  parent_frame:=map \
+  child_frame:=ldlidar_frame \
+  x:=0.10 y:=0.00 z:=0.20 yaw:=0.0 pitch:=0.0 roll:=0.0
+
+# Disable RViz2
+ros2 launch ldlidar_ros_bridge ldlidar_all_in_one.launch.py start_rviz:=false
+```
+
+### Independent TF only (optional)
+
+If you only want a static TF publisher (without bridge/RViz2):
 
 ```bash
 cd /ros2_ws
@@ -156,11 +180,9 @@ Current fixed values expected on both sides:
 ## Suggested next improvements
 
 1. Add ROS2 parameters for bridge output (`frame_id`, `range_min/max`, bins, output topic).
-2. Add launch files:
-  - `ldlidar_dds_server`: publisher launch
-  - `ldlidar_ros_bridge`: bridge + optional RViz launch
-3. Add CI build matrix for `common`, `dds_server`, `ros_bridge` targets.
-4. Add QoS and reconnect diagnostics for DDS link status.
+1. Add launch file for `ldlidar_dds_server` publisher startup.
+1. Add CI build matrix for `common`, `dds_server`, `ros_bridge` targets.
+1. Add QoS and reconnect diagnostics for DDS link status.
 
 ## License
 
