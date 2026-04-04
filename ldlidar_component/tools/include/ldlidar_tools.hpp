@@ -1,44 +1,52 @@
-//  Copyright 2024 Walter Lucetti
-//
-//  Licensed under the Apache License, Version 2.0 (the "License");
-//  you may not use this file except in compliance with the License.
-//  You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-//  Unless required by applicable law or agreed to in writing, software
-//  distributed under the License is distributed on an "AS IS" BASIS,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//  See the License for the specific language governing permissions and
-//  limitations under the License.
-////////////////////////////////////////////////////////////////////////////////
+#pragma once
 
-#ifndef LDLIDAR_TOOLS_HPP_
-#define LDLIDAR_TOOLS_HPP_
+#include <iostream>
+#include <string>
+#include <chrono>
+#include <cstdarg>
 
-#include <rclcpp/rclcpp.hpp>
+// Enum define log levels
+enum class LogLevel {
+    NONE,
+    ERROR,
+    WARN,
+    INFO,
+    DEBUG
+};
 
 namespace tools
 {
-/*! \brief qos value to string
- * \param qos the value to convert
- */
-std::string qos2str(rmw_qos_history_policy_t qos);
+// Create a class for logging objects
+class Logger
+{
+public:
 
-/*! \brief qos value to string
- * \param qos the value to convert
- */
-std::string qos2str(rmw_qos_reliability_policy_t qos);
+    // Constructors and destructors
+    Logger(const std::string &name, LogLevel level = LogLevel::INFO)
+        : _name(name), _logLevel(level) {};
+    ~Logger() = default;
 
-/*! \brief qos value to string
- * \param qos the value to convert
- */
-std::string qos2str(rmw_qos_durability_policy_t qos);
+    // Log methods
+    void log(LogLevel level, const char* fmt, ...);
+    void setLogLevel(LogLevel level);
 
-// /*! \brief units value to string
-//  * \param units the value to convert
-//  */
-// std::string to_string(ldlidar::UNITS val);
+private:
+    std::string _name; ///< Name of the logger.
+    LogLevel _logLevel; ///< Current log level.
+
+    std::string level_to_string(LogLevel level) const;
+    const char* get_color_code(LogLevel level);
+    std::string vformat(const char* fmt, va_list args);
+
+};
+
+// ========== MACRO LOG ==========
+// Logging macros
+#define LOG_ERR(logger, fmt, ...) (logger).log(LogLevel::ERROR, fmt, ##__VA_ARGS__)
+#define LOG_WRN(logger, fmt, ...) (logger).log(LogLevel::WARN,  fmt, ##__VA_ARGS__)
+#define LOG_INF(logger, fmt, ...) (logger).log(LogLevel::INFO,  fmt, ##__VA_ARGS__)
+#define LOG_DBG(logger, fmt, ...) (logger).log(LogLevel::DEBUG, fmt, ##__VA_ARGS__)
+
 
 // /*! \brief rotation value to string
 //  * \param rotation the value to convert
@@ -46,7 +54,4 @@ std::string qos2str(rmw_qos_durability_policy_t qos);
 // std::string to_string(ldlidar::ROTATION val);
 
 uint64_t GetSystemTimeStamp(void);
-}  // namespace tools
-
-
-#endif  // LDLIDAR_TOOLS_HPP_
+} // namespace tools

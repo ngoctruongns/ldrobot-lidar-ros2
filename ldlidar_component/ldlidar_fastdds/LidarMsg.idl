@@ -1,0 +1,6 @@
+struct LidarMessage
+{
+    float scan_time;
+    float ranges[455];
+    float intensities[455];
+};

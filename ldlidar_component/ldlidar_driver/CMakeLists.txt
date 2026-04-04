@@ -12,8 +12,8 @@ file(GLOB_RECURSE DRIVER_SRC *.c *.cpp)
 file(GLOB_RECURSE DRIVER_HDR *.h *.hpp)
 #########################################################
 
-add_library( ldlidar 
-  ${DRIVEDRIVER_HDR_SRC} 
+add_library( ldlidar STATIC
+  ${DRIVER_HDR}
   ${DRIVER_SRC}
 )
 
@@ -24,10 +24,11 @@ set_property(TARGET ldlidar PROPERTY POSITION_INDEPENDENT_CODE ON)
 # Make sure the compiler can find include files for our library
 # when other libraries or executables link to it
 target_include_directories( ldlidar PUBLIC
-  ${CMAKE_CURRENT_SOURCE_DIR}/include/core
-  ${CMAKE_CURRENT_SOURCE_DIR}/include/dataprocess
-  ${CMAKE_CURRENT_SOURCE_DIR}/include/filter
-  ${CMAKE_CURRENT_SOURCE_DIR}/include/logger
-  ${CMAKE_CURRENT_SOURCE_DIR}/include/networkcom
-  ${CMAKE_CURRENT_SOURCE_DIR}/include/serialcom
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/core>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/dataprocess>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/filter>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/logger>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/networkcom>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/serialcom>
+  $<INSTALL_INTERFACE:include>
 )
