@@ -127,6 +127,9 @@ source install/local_setup.zsh
 ros2 launch ldlidar_ros_bridge ldlidar_all_in_one.launch.py
 ```
 
+RViz config is stored in `ldlidar_ros_bridge/rviz/ldlidar_demo.rviz`.
+When the workspace is built with `--symlink-install`, saving from RViz updates the source config directly.
+
 Useful options:
 
 ```bash

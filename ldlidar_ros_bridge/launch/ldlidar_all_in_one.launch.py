@@ -1,12 +1,33 @@
+import os
+from ament_index_python import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.conditions import IfCondition
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
-from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description():
+    installed_rviz_config_file = os.path.join(
+        get_package_share_directory('ldlidar_ros_bridge'),
+        'rviz',
+        'ldlidar_demo.rviz'
+    )
+    source_rviz_config_file = os.path.abspath(
+        os.path.join(
+            os.path.dirname(os.path.realpath(__file__)),
+            '..',
+            '..',
+            'rviz',
+            'ldlidar_demo.rviz'
+        )
+    )
+    rviz_config_file = (
+        source_rviz_config_file
+        if os.path.exists(source_rviz_config_file)
+        else installed_rviz_config_file
+    )
+
     parent_frame_arg = DeclareLaunchArgument(
         'parent_frame',
         default_value='base_link',
@@ -15,7 +36,7 @@ def generate_launch_description():
 
     child_frame_arg = DeclareLaunchArgument(
         'child_frame',
-        default_value='ldlidar_frame',
+        default_value='lidar_link',
         description='Child frame for LiDAR static transform'
     )
 
@@ -56,12 +77,6 @@ def generate_launch_description():
         name='ldlidar_ros_bridge_node',
         output='screen'
     )
-
-    rviz_config_file = PathJoinSubstitution([
-        FindPackageShare('ldlidar_ros_bridge'),
-        'rviz',
-        'ldlidar_demo.rviz'
-    ])
 
     rviz_node = Node(
         package='rviz2',

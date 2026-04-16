@@ -13,7 +13,7 @@ def generate_launch_description():
 
     child_frame_arg = DeclareLaunchArgument(
         'child_frame',
-        default_value='ldlidar_frame',
+        default_value='lidar_link',
         description='Child frame for LiDAR static transform'
     )
 

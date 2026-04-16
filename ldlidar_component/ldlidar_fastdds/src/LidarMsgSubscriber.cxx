@@ -134,20 +134,20 @@ void LidarMsgSubscriber::SubListener::on_data_available(
         {
             // Print your structure data here.
             ++samples;
-            // print some ranges value to debug
-            if (st.ranges().size() >= 5)
-            {
-                std::cout << "Ranges [" << samples << "]: ";
-                for (size_t i = 0; i < 5; ++i)
-                {
-                    std::cout << st.ranges()[i] << " ";
-                }
-                std::cout << "..." << std::endl;
-            }
-            else
-            {
-                std::cout << "Received data with insufficient ranges." << std::endl;
-            }
+            // // print some ranges value to debug
+            // if (st.ranges().size() >= 5)
+            // {
+            //     std::cout << "Ranges [" << samples << "]: ";
+            //     for (size_t i = 0; i < 5; ++i)
+            //     {
+            //         std::cout << st.ranges()[i] << " ";
+            //     }
+            //     std::cout << "..." << std::endl;
+            // }
+            // else
+            // {
+            //     std::cout << "Received data with insufficient ranges." << std::endl;
+            // }
 
             if (callback_)
             {

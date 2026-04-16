@@ -10,7 +10,11 @@ public:
     LdLidarRosBridge()
         : Node("ldlidar_ros_bridge")
     {
-        publisher_ = create_publisher<sensor_msgs::msg::LaserScan>("ld_lidar_dds", 10);
+        // Declare lidar topic name parameter with default value "ldlidar_scan"
+        this->declare_parameter<std::string>("lidar_topic_name", "ldlidar_scan");
+        this->get_parameter("lidar_topic_name", lidar_topic_name_);
+
+        publisher_ = create_publisher<sensor_msgs::msg::LaserScan>(lidar_topic_name_, 10);
 
         if (!subscriber_.init())
         {
@@ -25,7 +29,7 @@ public:
 
             sensor_msgs::msg::LaserScan ros_msg;
             ros_msg.header.stamp = now();
-            ros_msg.header.frame_id = "ldlidar_frame";
+            ros_msg.header.frame_id = "lidar_link";
 
             constexpr float angle_min = 0.0F;
             constexpr float angle_max = 6.283185307179586F;
@@ -80,6 +84,8 @@ private:
     LidarMsgSubscriber subscriber_;
     rclcpp::TimerBase::SharedPtr watchdog_timer_;
     rclcpp::Time last_msg_time_;
+    std::string lidar_topic_name_;
+
 };
 
 int main(int argc, char* argv[])
