@@ -341,7 +341,7 @@ namespace ldlidar
                     break;
                 case ldlidar::LidarStatus::DATA_TIME_OUT:
                     LOG_ERR(_logger, "get ldlidar data is time out — attempting reconnect...");
-                    // attemptReconnect();
+                    attemptReconnect();
                     break;
                 case ldlidar::LidarStatus::DATA_WAIT:
                     break;
