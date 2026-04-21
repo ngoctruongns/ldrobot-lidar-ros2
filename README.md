@@ -8,6 +8,44 @@ This repository is refactored to support **one branch** and build both sides:
 
 This removes duplicated maintenance across separate Pi/Laptop branches.
 
+## Architecture (LiDAR -> Pi -> Laptop ROS2)
+
+```text
++--------------------------------------------------------------------------+
+|                         Laptop (Ubuntu + ROS2)                           |
+|                                                                          |
+|  FastDDS (raw)  <-->  ldlidar_ros_bridge_node  --->  ROS2 topic          |
+|                     (decode DDS -> LaserScan)        /ldlidar_scan       |
++--------------------------------------------------------------------------+
+                                ^
+                                |
+                                | FastDDS over LAN/WiFi
+                                | (LidarMessage, Domain 0, LidarMsgTopic)
+                                |
++--------------------------------------------------------------------------+
+|                     Raspberry Pi (ldlidar_dds_server)                    |
+|                                                                          |
+|  LiDAR input (USB/UART)  --->  read + publish DDS (raw message)          |
+|                                                                          |
+|  Pi publishes scan packets to DDS for laptop subscribers.                |
++--------------------------------------------------------------------------+
+                                ^
+                                |
+                                | USB/UART scan data
+                                |
++--------------------------------------------------------------------------+
+|                        LDROBOT LiDAR Sensor Device                       |
+|                                                                          |
+|  Produces scan ranges/intensities                                        |
++--------------------------------------------------------------------------+
+```
+
+Notes:
+
+- Focus of this diagram is data flow only: LiDAR data from device side to ROS2 topic on laptop.
+- Pi side publishes scan packets into DDS.
+- Laptop side subscribes DDS and converts message into ROS2 `LaserScan`.
+
 ## Package layout
 
 - `ldlidar_component` (shared)
@@ -20,6 +58,7 @@ This removes duplicated maintenance across separate Pi/Laptop branches.
 - `ldlidar_ros_bridge`
   - Executable: `ldlidar_ros_bridge_node`
   - Executable: `ldlidar_ros_bridge_debug_subscriber`
+  - Launch: `ldlidar_all_in_one.launch.py`, `ldlidar_standalone_tf.launch.py`
 
 ## Why keep one branch
 
@@ -103,8 +142,18 @@ ros2 run ldlidar_ros_bridge ldlidar_ros_bridge_node
 Check ROS2 output:
 
 ```bash
-ros2 topic list | grep ld_lidar_dds
-ros2 topic echo /ld_lidar_dds
+ros2 topic list | grep ldlidar_scan
+ros2 topic echo /ldlidar_scan
+```
+
+Bridge parameter (from current code):
+
+- `lidar_topic_name` (default: `ldlidar_scan`)
+
+Run with custom output topic:
+
+```bash
+ros2 run ldlidar_ros_bridge ldlidar_ros_bridge_node --ros-args -p lidar_topic_name:=/my_lidar_scan
 ```
 
 Optional DDS debug subscriber:
@@ -130,13 +179,16 @@ ros2 launch ldlidar_ros_bridge ldlidar_all_in_one.launch.py
 RViz config is stored in `ldlidar_ros_bridge/rviz/ldlidar_demo.rviz`.
 When the workspace is built with `--symlink-install`, saving from RViz updates the source config directly.
 
+Important: current `ldlidar_demo.rviz` may still contain legacy values (`/ld_lidar_dds`, `ldlidar_frame`).
+If scan is not visible, update RViz `LaserScan` topic to `/ldlidar_scan` and set `Fixed Frame` to `base_link` (or your selected parent frame).
+
 Useful options:
 
 ```bash
 # Custom TF
 ros2 launch ldlidar_ros_bridge ldlidar_all_in_one.launch.py \
   parent_frame:=map \
-  child_frame:=ldlidar_frame \
+  child_frame:=lidar_link \
   x:=0.10 y:=0.00 z:=0.20 yaw:=0.0 pitch:=0.0 roll:=0.0
 
 # Disable RViz2
@@ -156,21 +208,28 @@ ros2 launch ldlidar_ros_bridge ldlidar_standalone_tf.launch.py
 
 Default TF is:
 
-- `base_link -> ldlidar_frame`
+- `base_link -> lidar_link`
 
 Example with custom frame and offset:
 
 ```bash
 ros2 launch ldlidar_ros_bridge ldlidar_standalone_tf.launch.py \
   parent_frame:=map \
-  child_frame:=ldlidar_frame \
+  child_frame:=lidar_link \
   x:=0.10 y:=0.00 z:=0.20 yaw:=0.0 pitch:=0.0 roll:=0.0
 ```
 
 For RViz2 quick test:
 
 - Set `Fixed Frame` to `base_link` (or your `parent_frame`).
-- Add display type `LaserScan` and select topic `/ld_lidar_dds`.
+- Add display type `LaserScan` and select topic `/ldlidar_scan`.
+
+## Current behavior highlights
+
+- `ldlidar_dds_server_node` retries LiDAR initialization every 3 seconds until success.
+- Publisher recreates DDS participant if no subscriber is discovered after 10 seconds.
+- `ldlidar_ros_bridge_node` warns every watchdog cycle when no DDS scan is received for >3 seconds.
+- Bridge publishes 455 bins with range clipping to NaN outside `[0.02, 12.0]`.
 
 ## DDS compatibility contract (Pi <-> Laptop)
 
@@ -179,13 +238,6 @@ Current fixed values expected on both sides:
 - DDS Domain ID: `0`
 - DDS Topic: `LidarMsgTopic`
 - DDS Type: `LidarMessage` (`ldlidar_fastdds/LidarMsg.idl`)
-
-## Suggested next improvements
-
-1. Add ROS2 parameters for bridge output (`frame_id`, `range_min/max`, bins, output topic).
-1. Add launch file for `ldlidar_dds_server` publisher startup.
-1. Add CI build matrix for `common`, `dds_server`, `ros_bridge` targets.
-1. Add QoS and reconnect diagnostics for DDS link status.
 
 ## License
 
